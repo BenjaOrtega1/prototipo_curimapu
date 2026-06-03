@@ -1,21 +1,30 @@
 import { Printer, Search } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import ExportButtons from '../components/ExportButtons.jsx';
+import FormularioPreviewModal from '../components/FormularioPreviewModal.jsx';
+import ImportExcelButton from '../components/ImportExcelButton.jsx';
 import PlanillaGeneral, { buildGeneralRows } from '../components/PlanillaGeneral.jsx';
+import { importExcelRows } from '../services/importExcelService';
 import { listRomana } from '../services/romanaService';
 
 export default function Planilla() {
   const [records, setRecords] = useState([]);
   const [filters, setFilters] = useState({ date: '', month: '', proveedor: '', patente: '', producto: '', estado: '', search: '' });
+  const [importWarnings, setImportWarnings] = useState([]);
+  const [formularioRecord, setFormularioRecord] = useState(null);
   const captureRef = useRef(null);
 
+  async function load() {
+    setRecords(await listRomana());
+  }
+
   useEffect(() => {
-    listRomana().then(setRecords);
+    load();
   }, []);
 
   const rows = useMemo(() => buildGeneralRows(records), [records]);
   const filtered = rows.filter((row) => {
-    const haystack = `${row.Patente} ${row['Guía despacho']} ${row['N° guía despacho']} ${row['N° lote']} ${row.Proveedor}`.toLowerCase();
+    const haystack = `${row.Patente} ${row['Guia despacho']} ${row['N guia despacho']} ${row['N lote']} ${row.Proveedor}`.toLowerCase();
     return (!filters.date || row['Fecha ingreso'] === filters.date)
       && (!filters.month || row.Mes === filters.month)
       && (!filters.proveedor || row.Proveedor === filters.proveedor)
@@ -27,18 +36,38 @@ export default function Planilla() {
 
   const unique = (field) => [...new Set(rows.map((row) => row[field]).filter(Boolean))];
 
+  async function handleImportExcel(excelRows, options) {
+    const result = await importExcelRows(excelRows, options);
+    setImportWarnings(result.warnings || []);
+    await load();
+    return result;
+  }
+
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-950">Planilla general</h1>
-          <p className="text-sm text-slate-600">Información unificada de romana, laboratorio y almacenamiento.</p>
+          <p className="text-sm text-slate-600">Informacion unificada de romana, laboratorio y almacenamiento.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <ExportButtons rows={filtered.map(({ id, ...row }) => row)} captureRef={captureRef} />
+          <ImportExcelButton onImport={handleImportExcel} mode="general" label="Importar Excel" />
+          <ExportButtons rows={filtered.map(({ id, _record, ...row }) => row)} captureRef={captureRef} />
           <button className="btn btn-secondary" onClick={() => window.print()}><Printer size={17} />Imprimir resumen</button>
         </div>
       </div>
+
+      {importWarnings.length > 0 && (
+        <section className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <h2 className="font-bold">Advertencias de importacion</h2>
+          <ul className="mt-2 space-y-1">
+            {importWarnings.slice(0, 8).map((warning) => (
+              <li key={`${warning.row}-${warning.reason}`}>Fila {warning.row}: {warning.reason}</li>
+            ))}
+          </ul>
+          {importWarnings.length > 8 && <p className="mt-2">Hay {importWarnings.length - 8} advertencias adicionales.</p>}
+        </section>
+      )}
 
       <section className="panel rounded-md p-4">
         <div className="grid gap-3 md:grid-cols-7">
@@ -51,15 +80,16 @@ export default function Planilla() {
           <Field label="Buscar">
             <div className="relative">
               <Search className="absolute left-2 top-2.5 text-slate-400" size={16} />
-              <input className="pl-8" placeholder="Patente, guía, lote o proveedor" value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} />
+              <input className="pl-8" placeholder="Patente, guia, lote o proveedor" value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} />
             </div>
           </Field>
         </div>
       </section>
 
       <div ref={captureRef}>
-        <PlanillaGeneral rows={filtered} />
+        <PlanillaGeneral rows={filtered} onGenerateOfficial={setFormularioRecord} />
       </div>
+      <FormularioPreviewModal recepcion={formularioRecord} open={Boolean(formularioRecord)} onClose={() => setFormularioRecord(null)} />
     </div>
   );
 }

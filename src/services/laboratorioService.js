@@ -18,7 +18,7 @@ export async function listLaboratorio() {
 export async function upsertLaboratorio(payload) {
   const estado = payload.resultado === 'Rechazado' ? 'Rechazado' : 'Pendiente de almacenamiento';
   if (isSupabaseConfigured) {
-    const { data, error } = await supabase.from('laboratorio').upsert(payload).select().single();
+    const { data, error } = await supabase.from('laboratorio').upsert(payload, { onConflict: 'romana_id' }).select().single();
     if (error) throw error;
     await updateRomanaEstado(payload.romana_id, estado);
     return data;
@@ -29,11 +29,14 @@ export async function upsertLaboratorio(payload) {
     created_at: payload.created_at || new Date().toISOString(),
     ...payload,
   };
-  const exists = store.laboratorio.some((item) => item.id === laboratorio.id);
+  const exists = store.laboratorio.some((item) => item.id === laboratorio.id || item.romana_id === laboratorio.romana_id);
   const laboratorioRows = exists
-    ? store.laboratorio.map((item) => (item.id === laboratorio.id ? laboratorio : item))
+    ? store.laboratorio.map((item) => (item.id === laboratorio.id || item.romana_id === laboratorio.romana_id ? { ...item, ...laboratorio, id: item.id || laboratorio.id } : item))
     : [laboratorio, ...store.laboratorio];
   const romana = store.romana.map((item) => (item.id === payload.romana_id ? { ...item, estado } : item));
   setStore({ ...store, laboratorio: laboratorioRows, romana });
   return laboratorio;
 }
+
+export const createLaboratorio = upsertLaboratorio;
+export const create = upsertLaboratorio;

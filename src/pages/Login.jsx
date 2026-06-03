@@ -15,29 +15,39 @@ export default function Login() {
   }
 
   return (
-    <main className="grid min-h-screen place-items-center bg-curimapu-light px-4 py-10">
-      <form onSubmit={submit} className="w-full max-w-md rounded-md border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="mb-6 flex flex-col items-center text-center">
-          <Logo size="lg" showText={false} />
-          <h1 className="mt-5 text-2xl font-bold text-curimapu-dark">Sistema de Recepción y Análisis de Cereales</h1>
-          <p className="mt-2 text-sm text-slate-500">Acceso operativo Curimapu Chillán</p>
+    <main className="login-page">
+      <form onSubmit={submit} className="login-card">
+        <div className="mb-8 text-center">
+          <div className="mb-5 flex justify-center">
+            <Logo size="lg" showText={false} />
+          </div>
+          <p className="text-sm font-black uppercase tracking-[0.18em] text-curimapu-green">Curimapu Chillan</p>
+          <h1 className="mt-3 text-3xl font-black leading-tight text-curimapu-dark">
+            Sistema de Recepcion y Analisis de Cereales
+          </h1>
+          <p className="mt-3 text-sm font-medium text-slate-500">
+            Acceso simple para romana, laboratorio, almacenamiento y planilla general.
+          </p>
         </div>
+
         <div className="space-y-4">
-          <div className="space-y-1">
+          <div className="form-field">
             <label>Email</label>
             <div className="relative">
-              <Mail className="absolute left-3 top-2.5 text-slate-400" size={17} />
-              <input className="pl-9" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <Mail className="absolute left-4 top-3.5 text-slate-400" size={19} />
+              <input className="pl-11" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
           </div>
-          <div className="space-y-1">
-            <label>Contraseña</label>
+          <div className="form-field">
+            <label>Contrasena</label>
             <div className="relative">
-              <Lock className="absolute left-3 top-2.5 text-slate-400" size={17} />
-              <input className="pl-9" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+              <Lock className="absolute left-4 top-3.5 text-slate-400" size={19} />
+              <input className="pl-11" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
           </div>
-          <button className="btn btn-primary w-full" type="submit">Ingresar</button>
+          <button className="btn btn-primary w-full text-base" type="submit">
+            Ingresar al sistema
+          </button>
         </div>
       </form>
     </main>

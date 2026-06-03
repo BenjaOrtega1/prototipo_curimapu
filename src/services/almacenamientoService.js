@@ -18,7 +18,7 @@ export async function listAlmacenamiento() {
 
 export async function upsertAlmacenamiento(payload) {
   if (isSupabaseConfigured) {
-    const { data, error } = await supabase.from('almacenamiento').upsert(payload).select().single();
+    const { data, error } = await supabase.from('almacenamiento').upsert(payload, { onConflict: 'romana_id' }).select().single();
     if (error) throw error;
     await updateRomanaEstado(payload.romana_id, payload.estado_almacenamiento || 'En silo');
     return data;
@@ -29,9 +29,9 @@ export async function upsertAlmacenamiento(payload) {
     created_at: payload.created_at || new Date().toISOString(),
     ...payload,
   };
-  const exists = store.almacenamiento.some((item) => item.id === almacenamiento.id);
+  const exists = store.almacenamiento.some((item) => item.id === almacenamiento.id || item.romana_id === almacenamiento.romana_id);
   const almacenamientoRows = exists
-    ? store.almacenamiento.map((item) => (item.id === almacenamiento.id ? almacenamiento : item))
+    ? store.almacenamiento.map((item) => (item.id === almacenamiento.id || item.romana_id === almacenamiento.romana_id ? { ...item, ...almacenamiento, id: item.id || almacenamiento.id } : item))
     : [almacenamiento, ...store.almacenamiento];
   const romana = store.romana.map((item) => (
     item.id === payload.romana_id ? { ...item, estado: payload.estado_almacenamiento || 'En silo' } : item
@@ -39,3 +39,6 @@ export async function upsertAlmacenamiento(payload) {
   setStore({ ...store, almacenamiento: almacenamientoRows, romana });
   return almacenamiento;
 }
+
+export const createAlmacenamiento = upsertAlmacenamiento;
+export const create = upsertAlmacenamiento;
