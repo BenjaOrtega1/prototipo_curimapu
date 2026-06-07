@@ -1,18 +1,21 @@
-import { Save } from 'lucide-react';
+import { Save, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import Logo from '../components/Logo.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
 import { getConfiguracion, saveConfiguracion } from '../services/configuracionService';
 
 export default function Configuracion() {
+  const { user } = useAuth();
   const [form, setForm] = useState(null);
 
   useEffect(() => {
     getConfiguracion().then(setForm);
   }, []);
 
-  if (!form) return <div className="panel rounded-md p-6 text-sm text-slate-600">Cargando configuración...</div>;
+  if (!form) return <div className="panel rounded-md p-6 text-sm text-slate-600">Cargando configuracion...</div>;
 
   const update = (field, next) => setForm((current) => ({ ...current, [field]: next }));
+  const isAdmin = user?.user_metadata?.rol === 'admin' || user?.app_metadata?.role === 'admin';
 
   async function submit(event) {
     event.preventDefault();
@@ -22,8 +25,8 @@ export default function Configuracion() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-slate-950">Configuración</h1>
-        <p className="text-sm text-slate-600">Parámetros visuales, humedad de alerta y preparación para Supabase.</p>
+        <h1 className="text-2xl font-bold text-slate-950">Configuracion</h1>
+        <p className="text-sm text-slate-600">Parametros visuales, humedad de alerta, usuarios y preparacion para Supabase.</p>
       </div>
 
       <section className="panel rounded-md p-4">
@@ -44,6 +47,36 @@ export default function Configuracion() {
           <Field label="Color secundario"><input type="color" value={form.color_secundario || '#1f3d2b'} onChange={(e) => update('color_secundario', e.target.value)} /></Field>
         </div>
       </form>
+
+      {isAdmin && (
+        <section className="panel rounded-md p-4">
+          <div className="mb-4 flex items-center gap-2">
+            <Users className="text-curimapu-green" size={20} />
+            <h2 className="text-lg font-bold text-slate-900">Usuarios</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-[760px] w-full text-left text-sm">
+              <thead className="bg-curimapu-green text-white">
+                <tr>
+                  {['Correo', 'Fecha creacion', 'Ultimo acceso', 'Estado', 'Rol'].map((head) => (
+                    <th key={head} className="px-3 py-3 font-semibold">{head}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b border-slate-100">
+                  <td className="px-3 py-2">{user?.email}</td>
+                  <td className="px-3 py-2">{user?.created_at || 'Disponible en Supabase Auth'}</td>
+                  <td className="px-3 py-2">{user?.last_sign_in_at || 'Disponible en Supabase Auth'}</td>
+                  <td className="px-3 py-2">Activo</td>
+                  <td className="px-3 py-2">{user?.user_metadata?.rol || 'admin'}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-3 text-sm text-slate-500">Preparado para crear usuario, desactivar usuario y cambiar rol en una version futura.</p>
+        </section>
+      )}
 
       <section className="panel rounded-md p-4">
         <h2 className="text-lg font-bold text-slate-900">Variables `.env`</h2>

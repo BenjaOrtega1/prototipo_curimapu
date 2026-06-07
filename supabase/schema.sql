@@ -111,10 +111,28 @@ create table if not exists configuracion (
   created_at timestamp with time zone default now()
 );
 
+create table if not exists perfiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  nombre text,
+  rol text default 'operador',
+  created_at timestamp with time zone default now()
+);
+
 create table if not exists documentos_curimapu (
   id uuid primary key default gen_random_uuid(),
-  correlativo integer not null unique,
-  romana_id uuid references romana(id) on delete set null,
+  romana_id uuid references romana(id) on delete cascade,
+  laboratorio_id uuid references laboratorio(id) on delete set null,
+  almacenamiento_id uuid references almacenamiento(id) on delete set null,
+  correlativo integer not null,
+  numero_formateado text not null,
+  nombre_archivo text not null,
+  url_pdf text,
+  proveedor text,
+  patente text,
+  producto text,
+  resultado_laboratorio text,
+  observaciones text,
+  fecha_generacion timestamp with time zone default now(),
   created_at timestamp with time zone default now()
 );
 
@@ -237,6 +255,7 @@ alter table laboratorio enable row level security;
 alter table almacenamiento enable row level security;
 alter table configuracion enable row level security;
 alter table documentos_curimapu enable row level security;
+alter table perfiles enable row level security;
 
 drop policy if exists "prototipo proveedores lectura" on proveedores;
 drop policy if exists "prototipo proveedores escritura" on proveedores;
@@ -250,6 +269,8 @@ drop policy if exists "prototipo configuracion lectura" on configuracion;
 drop policy if exists "prototipo configuracion escritura" on configuracion;
 drop policy if exists "prototipo documentos lectura" on documentos_curimapu;
 drop policy if exists "prototipo documentos escritura" on documentos_curimapu;
+drop policy if exists "prototipo perfiles lectura" on perfiles;
+drop policy if exists "prototipo perfiles escritura" on perfiles;
 
 create policy "prototipo proveedores lectura" on proveedores for select using (true);
 create policy "prototipo proveedores escritura" on proveedores for all using (true) with check (true);
@@ -263,3 +284,5 @@ create policy "prototipo configuracion lectura" on configuracion for select usin
 create policy "prototipo configuracion escritura" on configuracion for all using (true) with check (true);
 create policy "prototipo documentos lectura" on documentos_curimapu for select using (true);
 create policy "prototipo documentos escritura" on documentos_curimapu for all using (true) with check (true);
+create policy "prototipo perfiles lectura" on perfiles for select using (true);
+create policy "prototipo perfiles escritura" on perfiles for all using (true) with check (true);

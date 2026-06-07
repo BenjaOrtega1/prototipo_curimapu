@@ -1,6 +1,7 @@
 import { BarChart3, Database, FlaskConical, LogOut, Scale, Settings, Table2, Warehouse, X } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import Logo from './Logo.jsx';
+import { supabase } from '../lib/supabase';
 
 const links = [
   { to: '/', label: 'Dashboard', icon: BarChart3 },
@@ -14,8 +15,8 @@ const links = [
 export default function Sidebar({ open = false, onClose }) {
   const navigate = useNavigate();
 
-  function logout() {
-    localStorage.removeItem('curimapu_session');
+  async function logout() {
+    await supabase?.auth.signOut();
     navigate('/login');
   }
 
