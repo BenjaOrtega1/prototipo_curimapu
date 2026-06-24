@@ -1,5 +1,6 @@
 import { Download, FileSpreadsheet } from 'lucide-react';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import Toast from './Toast.jsx';
 import { exportExcel } from '../utils/exporters';
 
@@ -23,10 +24,10 @@ export default function ExportButtons({ rows, compact = false }) {
           <FileSpreadsheet size={17} />
           {compact ? 'Excel' : 'Exportar Excel'}
         </button>
-        <a className="btn btn-primary" href="/planilla">
+        <Link className="btn btn-primary" to="/planilla">
           <Download size={17} />
           Ver planilla
-        </a>
+        </Link>
       </div>
       <Toast message={notice} onClose={() => setNotice('')} />
       <Toast message={error} type="error" onClose={() => setError('')} />
