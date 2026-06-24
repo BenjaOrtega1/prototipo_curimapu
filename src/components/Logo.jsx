@@ -1,5 +1,6 @@
 import { useState } from 'react';
-const logoUrl = '/src/assets/logo-curimapu.png';
+
+const logoUrl = '/logo.png';
 
 export default function Logo({ size = 'md', showText = true }) {
   const [failed, setFailed] = useState(false);
