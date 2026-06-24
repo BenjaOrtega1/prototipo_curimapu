@@ -1,5 +1,6 @@
 import { AlertTriangle, Download, Eye, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { formatCorrelativo, getNextCorrelativo, saveDocumentoMetadata } from '../services/documentoService';
 import { buildFormularioData, crearUrlFormulario } from '../utils/generarFormularioCurimapu';
 import FormularioPreview from './FormularioPreview.jsx';
@@ -88,19 +89,21 @@ export default function FormularioOficialModal({ recepcion, open, onClose }) {
   useEffect(() => {
     async function init() {
       if (!open || !recepcion) return;
-      setDatos(buildFormularioData(recepcion));
-      setPreview(false);
-      setError('');
-      setHighlightMissing(false);
-      const correlativo = await getNextCorrelativo();
-      setNumero(formatCorrelativo(correlativo));
+      try {
+        setDatos(buildFormularioData(recepcion));
+        setPreview(false);
+        setError('');
+        setHighlightMissing(false);
+        const correlativo = await getNextCorrelativo();
+        setNumero(formatCorrelativo(correlativo));
+      } catch (initError) {
+        setError(initError.message || 'No se pudo preparar el formulario oficial.');
+      }
     }
     init();
   }, [open, recepcion]);
 
   const missing = useMemo(() => importantFields.filter((field) => !datos[field]), [datos]);
-
-  if (!open) return null;
 
   function update(field, value) {
     setDatos((current) => ({ ...current, [field]: value }));
@@ -149,20 +152,22 @@ export default function FormularioOficialModal({ recepcion, open, onClose }) {
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/60 p-4">
-      <div className="flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
-        <div className="flex items-start justify-between gap-4 border-b border-slate-200 p-4">
+  if (!open) return null;
+
+  return createPortal(
+    <div className="modal-backdrop-stable">
+      <div className="modal-panel-stable flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl">
+        <div className="flex items-start justify-between gap-4 border-b border-slate-200 dark:border-slate-800 p-4">
           <div>
             <h2 className="text-xl font-black text-curimapu-dark">Preparar Formulario Oficial</h2>
-            <p className="text-sm text-slate-500">Formulario Oficial Curimapu N {numero}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Formulario Oficial Curimapu N {numero}</p>
           </div>
           <button className="btn btn-secondary px-2" type="button" onClick={onClose}><X size={18} /></button>
         </div>
 
         <div className="overflow-auto p-4">
           {missing.length > 0 && (
-            <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between">
+            <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 p-4 text-sm text-amber-900 dark:text-amber-200 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex gap-2">
                 <AlertTriangle className="mt-0.5 shrink-0" size={18} />
                 <span>Hay datos faltantes. Puedes completarlos antes de generar el formulario.</span>
@@ -171,7 +176,7 @@ export default function FormularioOficialModal({ recepcion, open, onClose }) {
             </div>
           )}
 
-          {error && <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-900">{error}</div>}
+          {error && <div className="mb-4 rounded-2xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/20 p-4 text-sm font-bold text-red-900 dark:text-red-300">{error}</div>}
 
           {preview ? (
             <FormularioPreview datos={datos} numero={numero} />
@@ -186,7 +191,7 @@ export default function FormularioOficialModal({ recepcion, open, onClose }) {
                       <div key={field} className="form-field">
                         <label>{label}</label>
                         <input
-                          className={highlightMissing && importantFields.includes(field) && !datos[field] ? 'border-amber-400 bg-amber-50' : ''}
+                          className={highlightMissing && importantFields.includes(field) && !datos[field] ? 'border-amber-400 bg-amber-50 dark:bg-amber-950/30' : ''}
                           value={datos[field] || ''}
                           onChange={(event) => update(field, event.target.value)}
                         />
@@ -203,7 +208,7 @@ export default function FormularioOficialModal({ recepcion, open, onClose }) {
           )}
         </div>
 
-        <div className="flex flex-wrap justify-end gap-2 border-t border-slate-200 bg-white p-4">
+        <div className="flex flex-wrap justify-end gap-2 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
           <button className="btn btn-secondary" type="button" onClick={onClose}>Cancelar</button>
           <button className="btn btn-secondary" type="button" onClick={() => setPreview((current) => !current)}>
             <Eye size={17} />
@@ -215,6 +220,7 @@ export default function FormularioOficialModal({ recepcion, open, onClose }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

@@ -67,7 +67,7 @@ export default function PlanillaGeneral({ rows, onGenerateOfficial }) {
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
       <div className="overflow-x-auto">
         <table className="min-w-[1500px] w-full text-left text-sm">
           <thead className="bg-curimapu-green text-white">
@@ -82,7 +82,7 @@ export default function PlanillaGeneral({ rows, onGenerateOfficial }) {
               const wet = Number(row['% humedad'] || 0) > humedadAlerta;
               const rejected = row['Estado general'] === 'Rechazado';
               return (
-                <tr key={row.id} className={`${rejected ? 'bg-red-50' : wet ? 'bg-amber-50' : 'bg-white'} border-b border-slate-100`}>
+                <tr key={row.id} className={`${rejected ? 'bg-red-50 dark:bg-red-950/20' : wet ? 'bg-amber-50 dark:bg-amber-950/20' : 'bg-white dark:bg-slate-900'} border-b border-slate-100 dark:border-slate-800`}>
                   <td className="px-3 py-2">{row.Mes}</td>
                   <td className="px-3 py-2">{row['Fecha ingreso']}</td>
                   <td className="px-3 py-2">{row['Hora ingreso']}</td>
@@ -114,7 +114,7 @@ export default function PlanillaGeneral({ rows, onGenerateOfficial }) {
               );
             })}
           </tbody>
-          <tfoot className="bg-slate-100 font-bold">
+          <tfoot className="bg-slate-100 dark:bg-slate-800 font-bold text-slate-900 dark:text-slate-100">
             <tr><td className="px-3 py-3" colSpan="20">Total registros: {rows.length} · Peso total entrada: {number(total)} kg</td></tr>
           </tfoot>
         </table>

@@ -3,9 +3,9 @@ import { isSupabaseConfigured } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext.jsx';
 
 export default function ProtectedRoute({ children }) {
-  const { loading, isAuthenticated } = useAuth();
+  const { loading, isAuthenticated, isDemo } = useAuth();
 
-  if (!isSupabaseConfigured) {
+  if (!isSupabaseConfigured && !isDemo) {
     return <Navigate to="/login" replace />;
   }
 

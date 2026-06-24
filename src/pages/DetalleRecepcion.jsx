@@ -1,15 +1,14 @@
-import { ArrowLeft, FileSpreadsheet, ImageDown, Pencil } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { ArrowLeft, FileSpreadsheet, Pencil } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import FlujoRecepcion from '../components/FlujoRecepcion.jsx';
 import { getRecepcion } from '../services/recepcionService';
-import { downloadNodeAsPng, exportExcel } from '../utils/exporters';
+import { exportExcel } from '../utils/exporters';
 import { humedadAlerta, number, statusLabel } from '../utils/formatters';
 
 export default function DetalleRecepcion() {
   const { id } = useParams();
   const [recepcion, setRecepcion] = useState(null);
-  const captureRef = useRef(null);
 
   useEffect(() => {
     getRecepcion(id).then(setRecepcion);
@@ -47,11 +46,10 @@ export default function DetalleRecepcion() {
         <div className="flex flex-wrap gap-2">
           <Link className="btn btn-secondary" to={`/nueva?id=${recepcion.id}`}><Pencil size={17} />Editar</Link>
           <button className="btn btn-secondary" onClick={() => exportExcel(exportRow, `recepcion_${recepcion.guia_despacho || recepcion.id}.xlsx`)}><FileSpreadsheet size={17} />Excel</button>
-          <button className="btn btn-primary" onClick={() => downloadNodeAsPng(captureRef.current, `recepcion_${recepcion.guia_despacho || recepcion.id}.png`)}><ImageDown size={17} />PNG</button>
         </div>
       </div>
 
-      <section ref={captureRef} className="panel rounded-md p-5">
+      <section className="panel rounded-md p-5">
         <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-wide text-curimapu-green">Curimapu Chillán</p>

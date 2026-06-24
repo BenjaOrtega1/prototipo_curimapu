@@ -4,14 +4,18 @@ import ExportButtons from '../components/ExportButtons.jsx';
 import FormularioPreviewModal from '../components/FormularioPreviewModal.jsx';
 import ImportExcelButton from '../components/ImportExcelButton.jsx';
 import PlanillaGeneral, { buildGeneralRows } from '../components/PlanillaGeneral.jsx';
+import Toast from '../components/Toast.jsx';
 import { importExcelRows } from '../services/importExcelService';
 import { listRomana } from '../services/romanaService';
+import { printRowsSummary } from '../utils/exporters';
 
 export default function Planilla() {
   const [records, setRecords] = useState([]);
   const [filters, setFilters] = useState({ date: '', month: '', proveedor: '', patente: '', producto: '', estado: '', search: '' });
   const [importWarnings, setImportWarnings] = useState([]);
   const [formularioRecord, setFormularioRecord] = useState(null);
+  const [notice, setNotice] = useState('');
+  const [error, setError] = useState('');
   const captureRef = useRef(null);
 
   async function load() {
@@ -39,26 +43,36 @@ export default function Planilla() {
   async function handleImportExcel(excelRows, options) {
     const result = await importExcelRows(excelRows, options);
     setImportWarnings(result.warnings || []);
+    setNotice(`Se importaron ${result.imported || 0} registros.`);
     await load();
     return result;
+  }
+
+  function handlePrintSummary() {
+    try {
+      printRowsSummary(filtered, 'Resumen planilla general Curimapu');
+      setNotice('Resumen preparado para impresion.');
+    } catch (printError) {
+      setError(printError.message || 'No se pudo preparar la impresion.');
+    }
   }
 
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-950">Planilla general</h1>
-          <p className="text-sm text-slate-600">Informacion unificada de romana, laboratorio y almacenamiento.</p>
+          <h1 className="text-2xl font-bold text-slate-950 dark:text-white">Planilla general</h1>
+          <p className="text-sm text-slate-600 dark:text-slate-400">Informacion unificada de romana, laboratorio y almacenamiento.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <ImportExcelButton onImport={handleImportExcel} mode="general" label="Importar Excel" />
-          <ExportButtons rows={filtered.map(({ id, _record, ...row }) => row)} captureRef={captureRef} />
-          <button className="btn btn-secondary" onClick={() => window.print()}><Printer size={17} />Imprimir resumen</button>
+          <ExportButtons rows={filtered.map(({ id, _record, ...row }) => row)} />
+          <button className="btn btn-secondary" type="button" onClick={handlePrintSummary}><Printer size={17} />Imprimir resumen</button>
         </div>
       </div>
 
       {importWarnings.length > 0 && (
-        <section className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        <section className="rounded-md border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 p-4 text-sm text-amber-900 dark:text-amber-200">
           <h2 className="font-bold">Advertencias de importacion</h2>
           <ul className="mt-2 space-y-1">
             {importWarnings.slice(0, 8).map((warning) => (
@@ -90,6 +104,8 @@ export default function Planilla() {
         <PlanillaGeneral rows={filtered} onGenerateOfficial={setFormularioRecord} />
       </div>
       <FormularioPreviewModal recepcion={formularioRecord} open={Boolean(formularioRecord)} onClose={() => setFormularioRecord(null)} />
+      <Toast message={notice} onClose={() => setNotice('')} />
+      <Toast message={error} type="error" onClose={() => setError('')} />
     </div>
   );
 }

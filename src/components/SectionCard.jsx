@@ -1,6 +1,19 @@
+import { motion, useReducedMotion } from 'motion/react';
+import { itemReveal, pressableMotion } from '../lib/motionSystem';
+
 export default function SectionCard({ title, description, action, children, className = '' }) {
+  const reduceMotion = useReducedMotion();
+
   return (
-    <section className={`section-card ${className}`}>
+    <motion.section
+      className={`section-card ${className}`}
+      layout
+      variants={itemReveal}
+      initial="hidden"
+      animate="show"
+      whileHover={reduceMotion ? undefined : { y: -2 }}
+      transition={pressableMotion.transition}
+    >
       {(title || description || action) && (
         <div className="section-card__header">
           <div>
@@ -11,6 +24,6 @@ export default function SectionCard({ title, description, action, children, clas
         </div>
       )}
       {children}
-    </section>
+    </motion.section>
   );
 }

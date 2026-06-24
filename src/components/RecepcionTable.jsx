@@ -39,7 +39,7 @@ export default function RecepcionTable({ rows, onDelete }) {
   const totalKilos = rows.reduce((sum, row) => sum + Number(row.Kilos || 0), 0);
 
   return (
-    <div className="overflow-hidden rounded-md border border-slate-200 bg-white">
+    <div className="overflow-hidden rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
       <div className="overflow-x-auto">
         <table className="min-w-[1180px] w-full border-collapse text-left text-sm">
           <thead className="bg-curimapu-green text-white">
@@ -54,7 +54,7 @@ export default function RecepcionTable({ rows, onDelete }) {
               const rejected = row.Estado === 'Rechazado';
               const wet = Number(row['% humedad']) > humedadAlerta;
               return (
-                <tr key={row.id} className={`${rejected ? 'bg-red-50 text-red-950' : wet ? 'bg-amber-50' : 'bg-white'} border-b border-slate-100`}>
+                <tr key={row.id} className={`${rejected ? 'bg-red-50 text-red-950 dark:bg-red-950/20 dark:text-red-200' : wet ? 'bg-amber-50 dark:bg-amber-950/20' : 'bg-white dark:bg-slate-900'} border-b border-slate-100 dark:border-slate-800`}>
                   <Cell>{row.Mes}</Cell>
                   <Cell>{row.Fecha}</Cell>
                   <Cell>{row['Hora muestreo']}</Cell>
@@ -63,7 +63,7 @@ export default function RecepcionTable({ rows, onDelete }) {
                   <Cell>{row['RPN°']}</Cell>
                   <Cell>{row['N° guía']}</Cell>
                   <Cell>{row.Folio}</Cell>
-                  <Cell className={wet ? 'font-bold text-amber-800' : ''}>{number(row['% humedad'], 1)}</Cell>
+                  <Cell className={wet ? 'font-bold text-amber-800 dark:text-amber-400' : ''}>{number(row['% humedad'], 1)}</Cell>
                   <Cell>{row['C. muestra (g)']}</Cell>
                   <Cell>{number(row['IMP (g)'], 1)}</Cell>
                   <Cell>{number(row['G.P (g)'], 1)}</Cell>
@@ -76,14 +76,14 @@ export default function RecepcionTable({ rows, onDelete }) {
                     <div className="flex gap-1">
                       <Link className="btn btn-secondary px-2" to={`/recepciones/${row.id}`} title="Ver detalle"><Eye size={15} /></Link>
                       <Link className="btn btn-secondary px-2" to={`/nueva?id=${row.id}`} title="Editar"><Pencil size={15} /></Link>
-                      <button className="btn btn-secondary px-2 text-red-700" onClick={() => onDelete(row.id)} title="Eliminar"><Trash2 size={15} /></button>
+                      <button className="btn btn-secondary px-2 text-red-700 dark:text-red-400" onClick={() => onDelete(row.id)} title="Eliminar"><Trash2 size={15} /></button>
                     </div>
                   </td>
                 </tr>
               );
             })}
           </tbody>
-          <tfoot className="bg-slate-100 font-bold text-slate-900">
+          <tfoot className="bg-slate-100 dark:bg-slate-800 font-bold text-slate-900 dark:text-slate-100">
             <tr>
               <td className="px-3 py-3" colSpan="17">Total registros: {rows.length} · Total kilos recibidos: {number(totalKilos)} kg</td>
               <td />
@@ -95,17 +95,18 @@ export default function RecepcionTable({ rows, onDelete }) {
   );
 }
 
+// Cell function stays unchanged
 function Cell({ children, className = '' }) {
   return <td className={`whitespace-nowrap px-3 py-2 align-top ${className}`}>{children}</td>;
 }
 
 function Status({ value }) {
   const className = value === 'Rechazado'
-    ? 'bg-red-100 text-red-800'
+    ? 'bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-300'
     : value === 'Aprobado'
-      ? 'bg-green-100 text-green-800'
+      ? 'bg-green-100 text-green-800 dark:bg-green-950/40 dark:text-green-300'
       : value === 'Incompleto'
-        ? 'bg-slate-200 text-slate-700'
-        : 'bg-amber-100 text-amber-800';
+        ? 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+        : 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300';
   return <span className={`rounded px-2 py-1 text-xs font-bold ${className}`}>{value}</span>;
 }

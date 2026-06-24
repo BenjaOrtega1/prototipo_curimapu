@@ -1,6 +1,9 @@
-import { BarChart3, Database, FlaskConical, LogOut, Scale, Settings, Table2, Warehouse, X } from 'lucide-react';
+import { BarChart3, Database, FlaskConical, LogOut, Scale, Table2, Warehouse, X } from 'lucide-react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import Logo from './Logo.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
+import { motionTokens } from '../lib/motionSystem';
 import { supabase } from '../lib/supabase';
 
 const links = [
@@ -9,21 +12,39 @@ const links = [
   { to: '/laboratorio', label: 'Laboratorio / Analisis', icon: FlaskConical },
   { to: '/almacenamiento', label: 'Almacenamiento', icon: Warehouse },
   { to: '/planilla', label: 'Planilla general', icon: Table2 },
-  { to: '/configuracion', label: 'Configuracion', icon: Settings },
 ];
 
 export default function Sidebar({ open = false, onClose }) {
   const navigate = useNavigate();
+  const reduceMotion = useReducedMotion();
+  const { exitDemo } = useAuth();
 
   async function logout() {
+    exitDemo?.();
     await supabase?.auth.signOut();
     navigate('/login');
   }
 
   return (
     <>
-      {open && <div className="app-sidebar__overlay" onClick={onClose} />}
-      <aside className={`app-sidebar ${open ? 'is-open' : ''}`}>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            className="app-sidebar__overlay"
+            initial={reduceMotion ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: motionTokens.duration.base }}
+            onClick={onClose}
+          />
+        )}
+      </AnimatePresence>
+      <motion.aside
+        className={`app-sidebar ${open ? 'is-open' : ''}`}
+        initial={false}
+        animate={reduceMotion ? undefined : { x: open ? 0 : undefined }}
+        transition={motionTokens.spring}
+      >
         <div className="app-sidebar__inner">
           <div className="app-sidebar__brand">
             <div className="flex items-start justify-between gap-3">
@@ -32,7 +53,7 @@ export default function Sidebar({ open = false, onClose }) {
                 <X size={17} />
               </button>
             </div>
-            <p>Sistema de Recepcion y Analisis de Cereales</p>
+            <p>Sistema de Recepción y Análisis de Cereales</p>
           </div>
 
           <nav className="app-sidebar__nav">
@@ -60,7 +81,7 @@ export default function Sidebar({ open = false, onClose }) {
             </button>
           </div>
         </div>
-      </aside>
+      </motion.aside>
     </>
   );
 }

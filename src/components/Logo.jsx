@@ -7,6 +7,7 @@ export default function Logo({ size = 'md', showText = true }) {
     sm: 'h-8',
     md: 'h-12',
     lg: 'h-16',
+    xl: 'h-24',
   };
 
   return (
@@ -26,7 +27,7 @@ export default function Logo({ size = 'md', showText = true }) {
       {showText && (
         <div className="leading-tight">
           <p className="font-bold text-curimapu-dark">CURIMAPU</p>
-          <p className="text-xs text-slate-500">Chillán</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Chillán</p>
         </div>
       )}
     </div>
