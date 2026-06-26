@@ -5,11 +5,16 @@ import FormularioPreviewModal from '../components/FormularioPreviewModal.jsx';
 import LaboratorioForm from '../components/LaboratorioForm.jsx';
 import LaboratorioTable from '../components/LaboratorioTable.jsx';
 import Toast from '../components/Toast.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
 import { listLaboratorio, upsertLaboratorio } from '../services/laboratorioService';
 import { listRomana } from '../services/romanaService';
 import { mapExcelRowToLaboratorio, resolveRomanaFromExcelRow } from '../utils/importExcelMapper';
 
 export default function Laboratorio() {
+  const { can } = useAuth();
+  const canWriteLaboratorio = can('laboratorio:write');
+  const canWriteAlmacenamiento = can('almacenamiento:write');
+  const canWriteDocuments = can('documentos:write');
   const [params] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -44,6 +49,7 @@ export default function Laboratorio() {
   }
 
   async function save(form) {
+    if (!canWriteLaboratorio) return;
     await upsertLaboratorio(form);
     setMessage('Analisis de laboratorio guardado correctamente.');
     setRomanaSeleccionada(null);
@@ -51,6 +57,7 @@ export default function Laboratorio() {
   }
 
   async function handleImportExcel(excelRows) {
+    if (!canWriteLaboratorio) return { imported: 0, warnings: [{ row: '-', reason: 'No tienes permiso para importar análisis de laboratorio.' }] };
     const warnings = [];
     let imported = 0;
 
@@ -95,7 +102,7 @@ export default function Laboratorio() {
           <h1 className="text-2xl font-bold text-slate-950">Laboratorio / Analisis</h1>
           <p className="text-sm text-slate-600">Recibe registros desde romana y define aprobacion o rechazo.</p>
         </div>
-        <ImportExcelButton onImport={handleImportExcel} mode="laboratorio" label="Importar Excel laboratorio" />
+        {canWriteLaboratorio && <ImportExcelButton onImport={handleImportExcel} mode="laboratorio" label="Importar Excel laboratorio" />}
       </div>
 
       {importWarnings.length > 0 && (
@@ -110,14 +117,22 @@ export default function Laboratorio() {
         </section>
       )}
 
-      <LaboratorioForm
-        pendientes={pendientes}
-        selectedRomanaId={selectedRomanaId}
-        romanaSeleccionada={romanaSeleccionada}
-        onRomanaChange={handleSelectRomana}
-        onSubmit={save}
+      {canWriteLaboratorio && (
+        <LaboratorioForm
+          pendientes={pendientes}
+          selectedRomanaId={selectedRomanaId}
+          romanaSeleccionada={romanaSeleccionada}
+          onRomanaChange={handleSelectRomana}
+          onSubmit={save}
+        />
+      )}
+      <LaboratorioTable
+        rows={laboratorioRows}
+        canSendStorage={canWriteAlmacenamiento}
+        canGenerateOfficial={canWriteDocuments}
+        onSendStorage={sendStorage}
+        onGenerateOfficial={setFormularioRecord}
       />
-      <LaboratorioTable rows={laboratorioRows} onSendStorage={sendStorage} onGenerateOfficial={setFormularioRecord} />
       <FormularioPreviewModal recepcion={formularioRecord} open={Boolean(formularioRecord)} onClose={() => setFormularioRecord(null)} />
       <Toast message={message} onClose={() => setMessage('')} />
     </div>

@@ -5,11 +5,14 @@ import FormularioPreviewModal from '../components/FormularioPreviewModal.jsx';
 import ImportExcelButton from '../components/ImportExcelButton.jsx';
 import PlanillaGeneral, { buildGeneralRows } from '../components/PlanillaGeneral.jsx';
 import Toast from '../components/Toast.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
 import { importExcelRows } from '../services/importExcelService';
 import { listRomana } from '../services/romanaService';
 import { printRowsSummary } from '../utils/exporters';
 
 export default function Planilla() {
+  const { can, isAdmin } = useAuth();
+  const canWriteDocuments = can('documentos:write');
   const [records, setRecords] = useState([]);
   const [filters, setFilters] = useState({ date: '', month: '', proveedor: '', patente: '', producto: '', estado: '', search: '' });
   const [importWarnings, setImportWarnings] = useState([]);
@@ -41,6 +44,7 @@ export default function Planilla() {
   const unique = (field) => [...new Set(rows.map((row) => row[field]).filter(Boolean))];
 
   async function handleImportExcel(excelRows, options) {
+    if (!isAdmin) return { imported: 0, warnings: [{ row: '-', reason: 'Solo un administrador puede importar una planilla general.' }] };
     const result = await importExcelRows(excelRows, options);
     setImportWarnings(result.warnings || []);
     setNotice(`Se importaron ${result.imported || 0} registros.`);
@@ -65,7 +69,7 @@ export default function Planilla() {
           <p className="text-sm text-slate-600 dark:text-slate-400">Informacion unificada de romana, laboratorio y almacenamiento.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <ImportExcelButton onImport={handleImportExcel} mode="general" label="Importar Excel" />
+          {isAdmin && <ImportExcelButton onImport={handleImportExcel} mode="general" label="Importar Excel" />}
           <ExportButtons rows={filtered.map(({ id, _record, ...row }) => row)} />
           <button className="btn btn-secondary" type="button" onClick={handlePrintSummary}><Printer size={17} />Imprimir resumen</button>
         </div>
@@ -101,7 +105,7 @@ export default function Planilla() {
       </section>
 
       <div ref={captureRef}>
-        <PlanillaGeneral rows={filtered} onGenerateOfficial={setFormularioRecord} />
+        <PlanillaGeneral rows={filtered} onGenerateOfficial={canWriteDocuments ? setFormularioRecord : undefined} />
       </div>
       <FormularioPreviewModal recepcion={formularioRecord} open={Boolean(formularioRecord)} onClose={() => setFormularioRecord(null)} />
       <Toast message={notice} onClose={() => setNotice('')} />

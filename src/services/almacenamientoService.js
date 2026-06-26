@@ -1,9 +1,9 @@
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
-import { getStore, setStore, uid } from './localStore';
+import { getStore, setStore, shouldUseRemote, uid } from './localStore';
 import { updateRomanaEstado } from './romanaService';
 
 export async function listAlmacenamiento() {
-  if (isSupabaseConfigured) {
+  if (isSupabaseConfigured && shouldUseRemote()) {
     const { data, error } = await supabase.from('almacenamiento').select('*, romana(*), laboratorio(*)').order('created_at', { ascending: false });
     if (error) throw error;
     return data;
@@ -17,7 +17,7 @@ export async function listAlmacenamiento() {
 }
 
 export async function upsertAlmacenamiento(payload) {
-  if (isSupabaseConfigured) {
+  if (isSupabaseConfigured && shouldUseRemote()) {
     const { data, error } = await supabase.from('almacenamiento').upsert(payload, { onConflict: 'romana_id' }).select().single();
     if (error) throw error;
     await updateRomanaEstado(payload.romana_id, payload.estado_almacenamiento || 'En silo');

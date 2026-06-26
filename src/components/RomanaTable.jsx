@@ -5,7 +5,17 @@ import EmptyState from './EmptyState.jsx';
 import StatusBadge from './StatusBadge.jsx';
 import { number } from '../utils/formatters';
 
-export default function RomanaTable({ rows, onEdit, onDelete, onSendLab, onGenerateOfficial }) {
+export default function RomanaTable({
+  rows,
+  canEdit = true,
+  canDelete = true,
+  canSendLab = true,
+  canGenerateOfficial = true,
+  onEdit,
+  onDelete,
+  onSendLab,
+  onGenerateOfficial,
+}) {
   const [detail, setDetail] = useState(null);
 
   if (!rows.length) {
@@ -42,10 +52,10 @@ export default function RomanaTable({ rows, onEdit, onDelete, onSendLab, onGener
                   <td className="px-3 py-2">
                     <div className="flex gap-1">
                       <button className="btn btn-secondary px-2" type="button" onClick={() => setDetail(row)} title="Ver detalle"><Eye size={15} /></button>
-                      <button className="btn btn-secondary px-2" type="button" onClick={() => onGenerateOfficial?.(row)} title="Generar Formulario Oficial"><FileText size={15} /></button>
-                      <button className="btn btn-secondary px-2" type="button" onClick={() => onEdit(row)} title="Editar"><Pencil size={15} /></button>
-                      <button className="btn btn-secondary px-2" type="button" onClick={() => onSendLab(row)} title="Enviar a laboratorio"><FlaskConical size={15} /></button>
-                      <button className="btn btn-secondary px-2 text-red-700" type="button" onClick={() => onDelete(row.id)} title="Eliminar"><Trash2 size={15} /></button>
+                      {canGenerateOfficial && <button className="btn btn-secondary px-2" type="button" onClick={() => onGenerateOfficial?.(row)} title="Generar Formulario Oficial"><FileText size={15} /></button>}
+                      {canEdit && <button className="btn btn-secondary px-2" type="button" onClick={() => onEdit(row)} title="Editar"><Pencil size={15} /></button>}
+                      {canSendLab && <button className="btn btn-secondary px-2" type="button" onClick={() => onSendLab(row)} title="Enviar a laboratorio"><FlaskConical size={15} /></button>}
+                      {canDelete && <button className="btn btn-secondary px-2 text-red-700" type="button" onClick={() => onDelete(row.id)} title="Eliminar"><Trash2 size={15} /></button>}
                     </div>
                   </td>
                 </tr>

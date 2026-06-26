@@ -5,11 +5,15 @@ import AlmacenamientoTable from '../components/AlmacenamientoTable.jsx';
 import FormularioPreviewModal from '../components/FormularioPreviewModal.jsx';
 import ImportExcelButton from '../components/ImportExcelButton.jsx';
 import Toast from '../components/Toast.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
 import { listAlmacenamiento, upsertAlmacenamiento } from '../services/almacenamientoService';
 import { listRomana } from '../services/romanaService';
 import { mapExcelRowToAlmacenamiento, resolveRomanaFromExcelRow } from '../utils/importExcelMapper';
 
 export default function Almacenamiento() {
+  const { can } = useAuth();
+  const canWriteAlmacenamiento = can('almacenamiento:write');
+  const canWriteDocuments = can('documentos:write');
   const location = useLocation();
   const romanaDesdeRuta = location.state?.romanaSeleccionada || null;
   const laboratorioDesdeRuta = location.state?.laboratorioSeleccionado || null;
@@ -42,6 +46,7 @@ export default function Almacenamiento() {
   }
 
   async function save(form) {
+    if (!canWriteAlmacenamiento) return;
     await upsertAlmacenamiento(form);
     setMessage('Almacenamiento guardado correctamente.');
     setSeleccionada(null);
@@ -49,6 +54,7 @@ export default function Almacenamiento() {
   }
 
   async function handleImportExcel(excelRows) {
+    if (!canWriteAlmacenamiento) return { imported: 0, warnings: [{ row: '-', reason: 'No tienes permiso para importar almacenamiento.' }] };
     const warnings = [];
     let imported = 0;
 
@@ -87,7 +93,7 @@ export default function Almacenamiento() {
           <h1 className="text-2xl font-bold text-slate-950">Almacenamiento</h1>
           <p className="text-sm text-slate-600">Asigna silo, bodega o destino a registros aprobados por laboratorio.</p>
         </div>
-        <ImportExcelButton onImport={handleImportExcel} mode="almacenamiento" label="Importar Excel almacenamiento" />
+        {canWriteAlmacenamiento && <ImportExcelButton onImport={handleImportExcel} mode="almacenamiento" label="Importar Excel almacenamiento" />}
       </div>
 
       {importWarnings.length > 0 && (
@@ -102,15 +108,17 @@ export default function Almacenamiento() {
         </section>
       )}
 
-      <AlmacenamientoForm
-        aprobados={aprobados}
-        selectedRomanaId={seleccionada?.id || ''}
-        selectedLaboratorioId={seleccionada?.laboratorio?.id || laboratorioDesdeRuta?.id || ''}
-        resumenSeleccionado={seleccionada}
-        onRecepcionChange={handleSelectRecepcion}
-        onSubmit={save}
-      />
-      <AlmacenamientoTable rows={almacenamientoRows} onGenerateOfficial={setFormularioRecord} />
+      {canWriteAlmacenamiento && (
+        <AlmacenamientoForm
+          aprobados={aprobados}
+          selectedRomanaId={seleccionada?.id || ''}
+          selectedLaboratorioId={seleccionada?.laboratorio?.id || laboratorioDesdeRuta?.id || ''}
+          resumenSeleccionado={seleccionada}
+          onRecepcionChange={handleSelectRecepcion}
+          onSubmit={save}
+        />
+      )}
+      <AlmacenamientoTable rows={almacenamientoRows} canGenerateOfficial={canWriteDocuments} onGenerateOfficial={setFormularioRecord} />
       <FormularioPreviewModal recepcion={formularioRecord} open={Boolean(formularioRecord)} onClose={() => setFormularioRecord(null)} />
       <Toast message={message} onClose={() => setMessage('')} />
     </div>

@@ -1,15 +1,16 @@
-import { BarChart3, Database, FlaskConical, LogOut, Scale, Table2, Warehouse, X } from 'lucide-react';
+import { BarChart3, Database, FlaskConical, LogOut, PanelLeftClose, Scale, Table2, Warehouse } from 'lucide-react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import Logo from './Logo.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { motionTokens } from '../lib/motionSystem';
 import { supabase } from '../lib/supabase';
+import { roleLabel } from '../utils/permissions';
 
 const links = [
   { to: '/', label: 'Dashboard', icon: BarChart3 },
   { to: '/romana', label: 'Romana / Pesaje', icon: Scale },
-  { to: '/laboratorio', label: 'Laboratorio / Analisis', icon: FlaskConical },
+  { to: '/laboratorio', label: 'Laboratorio / Análisis', icon: FlaskConical },
   { to: '/almacenamiento', label: 'Almacenamiento', icon: Warehouse },
   { to: '/planilla', label: 'Planilla general', icon: Table2 },
 ];
@@ -17,7 +18,7 @@ const links = [
 export default function Sidebar({ open = false, onClose }) {
   const navigate = useNavigate();
   const reduceMotion = useReducedMotion();
-  const { exitDemo } = useAuth();
+  const { exitDemo, role } = useAuth();
 
   async function logout() {
     exitDemo?.();
@@ -42,18 +43,21 @@ export default function Sidebar({ open = false, onClose }) {
       <motion.aside
         className={`app-sidebar ${open ? 'is-open' : ''}`}
         initial={false}
-        animate={reduceMotion ? undefined : { x: open ? 0 : undefined }}
+        animate={reduceMotion ? undefined : { x: open ? 0 : '-100%' }}
         transition={motionTokens.spring}
       >
         <div className="app-sidebar__inner">
           <div className="app-sidebar__brand">
             <div className="flex items-start justify-between gap-3">
-              <Logo size="md" />
-              <button className="btn btn-secondary px-2 lg:hidden" type="button" onClick={onClose} aria-label="Cerrar menu">
-                <X size={17} />
+              <Logo size="md" showText={false} />
+              <button className="btn btn-secondary px-2" type="button" onClick={onClose} aria-label="Minimizar menú lateral">
+                <PanelLeftClose size={17} />
               </button>
             </div>
-            <p>Sistema de Recepción y Análisis de Cereales</p>
+            <div className="app-sidebar__system">
+              <strong>Sistema de Recepción y Análisis Curimapu</strong>
+              <span>{roleLabel(role)}</span>
+            </div>
           </div>
 
           <nav className="app-sidebar__nav">

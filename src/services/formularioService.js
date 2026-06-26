@@ -1,10 +1,10 @@
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
-import { getStore, setStore, uid } from './localStore';
+import { getStore, setStore, shouldUseRemote, uid } from './localStore';
 
 const START_CORRELATIVO = 5083;
 
 export async function createDocumentoCurimapu(romanaId) {
-  if (isSupabaseConfigured) {
+  if (isSupabaseConfigured && shouldUseRemote()) {
     const { data: last, error: lastError } = await supabase
       .from('documentos_curimapu')
       .select('correlativo')

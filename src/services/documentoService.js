@@ -1,18 +1,26 @@
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { getStore, isDemoMode, setStore, shouldUseRemote } from './localStore';
 
 const STORAGE_KEY = 'curimapu_documentos';
 const START_CORRELATIVO = 5083;
 
 function readLocal() {
+  if (isDemoMode()) return getStore().documentos_curimapu || [];
   return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
 }
 
 function writeLocal(rows) {
+  if (isDemoMode()) {
+    const store = getStore();
+    setStore({ ...store, documentos_curimapu: rows });
+    return;
+  }
+
   localStorage.setItem(STORAGE_KEY, JSON.stringify(rows));
 }
 
 export async function getNextCorrelativo() {
-  if (isSupabaseConfigured) {
+  if (isSupabaseConfigured && shouldUseRemote()) {
     const { data, error } = await supabase
       .from('documentos_curimapu')
       .select('correlativo')
@@ -28,7 +36,7 @@ export async function getNextCorrelativo() {
 }
 
 export async function saveDocumentoMetadata(payload) {
-  if (isSupabaseConfigured) {
+  if (isSupabaseConfigured && shouldUseRemote()) {
     const { data, error } = await supabase.from('documentos_curimapu').insert(payload).select().single();
     if (error) throw error;
     return data;
@@ -46,7 +54,7 @@ export async function saveDocumentoMetadata(payload) {
 
 export async function listDocumentosByRomanaId(romanaId) {
   if (!romanaId) return [];
-  if (isSupabaseConfigured) {
+  if (isSupabaseConfigured && shouldUseRemote()) {
     const { data, error } = await supabase
       .from('documentos_curimapu')
       .select('*')
@@ -59,7 +67,7 @@ export async function listDocumentosByRomanaId(romanaId) {
 }
 
 export async function getDocumentoById(id) {
-  if (isSupabaseConfigured) {
+  if (isSupabaseConfigured && shouldUseRemote()) {
     const { data, error } = await supabase.from('documentos_curimapu').select('*').eq('id', id).single();
     if (error) throw error;
     return data;
@@ -68,7 +76,7 @@ export async function getDocumentoById(id) {
 }
 
 export async function deleteDocumento(id) {
-  if (isSupabaseConfigured) {
+  if (isSupabaseConfigured && shouldUseRemote()) {
     const { error } = await supabase.from('documentos_curimapu').delete().eq('id', id);
     if (error) throw error;
     return;

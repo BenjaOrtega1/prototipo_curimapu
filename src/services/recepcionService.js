@@ -1,8 +1,8 @@
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
-import { getStore, setStore, uid } from './localStore';
+import { getStore, setStore, shouldUseRemote, uid } from './localStore';
 
 export async function listRecepciones() {
-  if (isSupabaseConfigured) {
+  if (isSupabaseConfigured && shouldUseRemote()) {
     const { data, error } = await supabase
       .from('recepciones')
       .select('*, proveedores(*), analisis(*)')
@@ -30,7 +30,7 @@ export async function upsertRecepcion(payload) {
     kilos_netos: kilosNetos > 0 ? kilosNetos : Number(payload.kilos_netos || 0),
   };
 
-  if (isSupabaseConfigured) {
+  if (isSupabaseConfigured && shouldUseRemote()) {
     // Supabase calcula kilos_netos como columna generada; se omite para evitar errores de escritura.
     const { kilos_netos, ...supabaseRecord } = record;
     const { data, error } = await supabase.from('recepciones').upsert(supabaseRecord).select().single();
@@ -52,7 +52,7 @@ export async function upsertRecepcion(payload) {
 }
 
 export async function deleteRecepcion(id) {
-  if (isSupabaseConfigured) {
+  if (isSupabaseConfigured && shouldUseRemote()) {
     const { error } = await supabase.from('recepciones').delete().eq('id', id);
     if (error) throw error;
     return;

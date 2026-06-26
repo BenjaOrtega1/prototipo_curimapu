@@ -1,8 +1,9 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { clearDemoStore, DEMO_SESSION_KEY } from '../services/localStore';
+import { getRoleCapabilities, normalizeRole } from '../utils/permissions';
 
 const AuthContext = createContext(null);
-const DEMO_SESSION_KEY = 'curimapu_demo_session';
 
 const demoUser = {
   id: 'demo-user',
@@ -18,7 +19,8 @@ const demoUser = {
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
-  const [demoSession, setDemoSession] = useState(() => localStorage.getItem(DEMO_SESSION_KEY) === 'true');
+  const [profile, setProfile] = useState(null);
+  const [demoSession, setDemoSession] = useState(() => sessionStorage.getItem(DEMO_SESSION_KEY) === 'true');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -40,25 +42,53 @@ export function AuthProvider({ children }) {
     return () => listener.subscription.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    const userId = session?.user?.id;
+    if (!isSupabaseConfigured || demoSession || !userId) {
+      setProfile(null);
+      return;
+    }
+
+    supabase
+      .from('perfiles')
+      .select('id, nombre, rol')
+      .eq('id', userId)
+      .maybeSingle()
+      .then(({ data }) => setProfile(data || null));
+  }, [session?.user?.id, demoSession]);
+
   function enterDemo() {
-    localStorage.setItem(DEMO_SESSION_KEY, 'true');
+    sessionStorage.setItem(DEMO_SESSION_KEY, 'true');
+    clearDemoStore();
     setDemoSession(true);
   }
 
   function exitDemo() {
-    localStorage.removeItem(DEMO_SESSION_KEY);
+    sessionStorage.removeItem(DEMO_SESSION_KEY);
+    clearDemoStore();
     setDemoSession(false);
   }
 
+  const user = demoSession ? demoUser : session?.user || null;
+  const role = demoSession
+    ? 'admin'
+    : normalizeRole(profile?.rol || user?.app_metadata?.role || user?.user_metadata?.rol || user?.user_metadata?.role);
+  const capabilities = getRoleCapabilities(role);
+
   const value = useMemo(() => ({
     session,
-    user: demoSession ? demoUser : session?.user || null,
+    user,
+    profile,
+    role,
+    capabilities,
     loading,
     isDemo: demoSession,
     enterDemo,
     exitDemo,
     isAuthenticated: demoSession || Boolean(session),
-  }), [session, loading, demoSession]);
+    can: (permission) => capabilities.includes(permission),
+    isAdmin: role === 'admin' || role === 'desarrollador',
+  }), [session, user, profile, role, capabilities, loading, demoSession]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

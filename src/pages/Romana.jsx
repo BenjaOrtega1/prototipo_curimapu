@@ -5,12 +5,17 @@ import FormularioPreviewModal from '../components/FormularioPreviewModal.jsx';
 import RomanaForm from '../components/RomanaForm.jsx';
 import RomanaTable from '../components/RomanaTable.jsx';
 import Toast from '../components/Toast.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
 import { importExcelRows } from '../services/importExcelService';
 import { upsertProveedor } from '../services/proveedorService';
 import { deleteRomana, listRomana, upsertRomana } from '../services/romanaService';
 
 export default function Romana() {
   const navigate = useNavigate();
+  const { can } = useAuth();
+  const canWriteRomana = can('romana:write');
+  const canWriteLaboratorio = can('laboratorio:write');
+  const canWriteDocuments = can('documentos:write');
   const [rows, setRows] = useState([]);
   const [editing, setEditing] = useState(null);
   const [importWarnings, setImportWarnings] = useState([]);
@@ -26,6 +31,7 @@ export default function Romana() {
   }, []);
 
   async function save(form) {
+    if (!canWriteRomana) return;
     const proveedor = await upsertProveedor({
       nombre: form.proveedor_nombre,
       rut: form.rut_proveedor,
@@ -41,6 +47,7 @@ export default function Romana() {
   }
 
   async function remove(id) {
+    if (!canWriteRomana) return;
     if (window.confirm('Eliminar este ingreso de romana?')) {
       await deleteRomana(id);
       load();
@@ -56,6 +63,7 @@ export default function Romana() {
   }
 
   async function handleImportExcel(excelRows, options) {
+    if (!canWriteRomana) return { imported: 0, warnings: [{ row: '-', reason: 'No tienes permiso para importar registros de romana.' }] };
     const result = await importExcelRows(excelRows, options);
     setImportWarnings(result.warnings || []);
     await load();
@@ -69,7 +77,7 @@ export default function Romana() {
           <h1 className="text-2xl font-bold text-slate-950">Romana / Pesaje</h1>
           <p className="text-sm text-slate-600">Registra patente, chofer, proveedor, guia y peso de entrada.</p>
         </div>
-        <ImportExcelButton onImport={handleImportExcel} mode="romana" label="Importar Excel" />
+        {canWriteRomana && <ImportExcelButton onImport={handleImportExcel} mode="romana" label="Importar Excel" />}
       </div>
 
       {importWarnings.length > 0 && (
@@ -84,8 +92,18 @@ export default function Romana() {
         </section>
       )}
 
-      <RomanaForm value={editing} onSubmit={save} onCancel={() => setEditing(null)} />
-      <RomanaTable rows={rows} onEdit={setEditing} onDelete={remove} onSendLab={sendLab} onGenerateOfficial={setFormularioRecord} />
+      {canWriteRomana && <RomanaForm value={editing} onSubmit={save} onCancel={() => setEditing(null)} />}
+      <RomanaTable
+        rows={rows}
+        canEdit={canWriteRomana}
+        canDelete={canWriteRomana}
+        canSendLab={canWriteLaboratorio}
+        canGenerateOfficial={canWriteDocuments}
+        onEdit={setEditing}
+        onDelete={remove}
+        onSendLab={sendLab}
+        onGenerateOfficial={setFormularioRecord}
+      />
       <FormularioPreviewModal recepcion={formularioRecord} open={Boolean(formularioRecord)} onClose={() => setFormularioRecord(null)} />
       <Toast message={message} onClose={() => setMessage('')} />
     </div>

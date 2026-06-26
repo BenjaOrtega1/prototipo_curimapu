@@ -1,8 +1,8 @@
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
-import { getStore, setStore, uid } from './localStore';
+import { getStore, setStore, shouldUseRemote, uid } from './localStore';
 
 export async function upsertAnalisis(payload) {
-  if (isSupabaseConfigured) {
+  if (isSupabaseConfigured && shouldUseRemote()) {
     const { data, error } = await supabase.from('analisis').upsert(payload).select().single();
     if (error) throw error;
     return data;

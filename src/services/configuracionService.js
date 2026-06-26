@@ -1,8 +1,9 @@
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { shouldUseRemote } from './localStore';
 import { getStore, setStore } from './localStore';
 
 export async function getConfiguracion() {
-  if (isSupabaseConfigured) {
+  if (isSupabaseConfigured && shouldUseRemote()) {
     const { data, error } = await supabase.from('configuracion').select('*').limit(1).maybeSingle();
     if (error) throw error;
     return data;
@@ -11,7 +12,7 @@ export async function getConfiguracion() {
 }
 
 export async function saveConfiguracion(payload) {
-  if (isSupabaseConfigured) {
+  if (isSupabaseConfigured && shouldUseRemote()) {
     const { data, error } = await supabase.from('configuracion').upsert(payload).select().single();
     if (error) throw error;
     return data;

@@ -3,7 +3,7 @@ import EmptyState from './EmptyState.jsx';
 import StatusBadge from './StatusBadge.jsx';
 import { number } from '../utils/formatters';
 
-export default function AlmacenamientoTable({ rows, onGenerateOfficial }) {
+export default function AlmacenamientoTable({ rows, canGenerateOfficial = true, onGenerateOfficial }) {
   if (!rows.length) {
     return (
       <div className="section-card">
@@ -34,9 +34,9 @@ export default function AlmacenamientoTable({ rows, onGenerateOfficial }) {
                 <td className="px-3 py-2">{row.silo_bodega}</td>
                 <td className="px-3 py-2"><StatusBadge value={row.estado_almacenamiento} /></td>
                 <td className="px-3 py-2">
-                  <button className="btn btn-secondary px-2" type="button" onClick={() => onGenerateOfficial?.({ ...row.romana, laboratorio: row.laboratorio, almacenamiento: row })} title="Generar Formulario Oficial">
+                  {canGenerateOfficial && <button className="btn btn-secondary px-2" type="button" onClick={() => onGenerateOfficial?.({ ...row.romana, laboratorio: row.laboratorio, almacenamiento: row })} title="Generar Formulario Oficial">
                     <FileText size={15} />
-                  </button>
+                  </button>}
                 </td>
               </tr>
             ))}

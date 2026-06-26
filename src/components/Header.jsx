@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext.jsx';
 import { useTheme } from '../contexts/ThemeContext.jsx';
 import { supabase } from '../lib/supabase';
 
-export default function Header({ onMenuClick }) {
+export default function Header({ sidebarOpen = false, onMenuClick }) {
   const navigate = useNavigate();
   const { user, exitDemo } = useAuth();
   const { theme, toggleTheme } = useTheme();
@@ -30,7 +30,7 @@ export default function Header({ onMenuClick }) {
   return (
     <header className="app-header">
       <motion.span className="app-header__progress" style={{ scaleX: progress }} aria-hidden="true" />
-      <button className="app-header__menu" type="button" onClick={onMenuClick} aria-label="Abrir menu">
+      <button className="app-header__menu" type="button" onClick={onMenuClick} aria-label={sidebarOpen ? 'Cerrar menu lateral' : 'Abrir menu lateral'}>
         <Menu size={22} />
       </button>
       <div>

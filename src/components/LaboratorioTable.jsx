@@ -3,7 +3,7 @@ import EmptyState from './EmptyState.jsx';
 import StatusBadge from './StatusBadge.jsx';
 import { humedadAlerta, number } from '../utils/formatters';
 
-export default function LaboratorioTable({ rows, onSendStorage, onGenerateOfficial }) {
+export default function LaboratorioTable({ rows, canSendStorage = true, canGenerateOfficial = true, onSendStorage, onGenerateOfficial }) {
   if (!rows.length) {
     return (
       <div className="section-card">
@@ -39,10 +39,10 @@ export default function LaboratorioTable({ rows, onSendStorage, onGenerateOffici
                   <td className="px-3 py-2">{row.observaciones_laboratorio}</td>
                   <td className="px-3 py-2">
                     <div className="flex gap-1">
-                      <button className="btn btn-secondary px-2" type="button" onClick={() => onGenerateOfficial?.({ ...row.romana, laboratorio: row })} title="Generar Formulario Oficial">
+                      {canGenerateOfficial && <button className="btn btn-secondary px-2" type="button" onClick={() => onGenerateOfficial?.({ ...row.romana, laboratorio: row })} title="Generar Formulario Oficial">
                         <FileText size={15} />
-                      </button>
-                      {row.resultado === 'Aprobado' ? (
+                      </button>}
+                      {row.resultado === 'Aprobado' && canSendStorage ? (
                         <button className="btn btn-secondary px-2" type="button" onClick={() => onSendStorage?.(row)} title="Enviar a almacenamiento">
                           <Warehouse size={15} />
                         </button>

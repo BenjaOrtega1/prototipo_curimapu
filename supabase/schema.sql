@@ -114,7 +114,45 @@ create table if not exists configuracion (
 create table if not exists perfiles (
   id uuid primary key references auth.users(id) on delete cascade,
   nombre text,
-  rol text default 'operador',
+  rol text default 'consulta'
+    check (rol in ('admin', 'desarrollador', 'romana', 'laboratorio', 'almacenamiento', 'consulta')),
+  created_at timestamp with time zone default now()
+);
+
+create or replace function create_profile_for_new_user()
+returns trigger as $$
+begin
+  insert into perfiles (id, nombre, rol)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data ->> 'nombre', new.email),
+    case
+      when new.raw_user_meta_data ->> 'rol' in ('admin', 'desarrollador', 'romana', 'laboratorio', 'almacenamiento', 'consulta')
+      then new.raw_user_meta_data ->> 'rol'
+      else 'consulta'
+    end
+  )
+  on conflict (id) do nothing;
+
+  return new;
+end;
+$$ language plpgsql security definer;
+
+drop trigger if exists trg_create_profile_for_new_user on auth.users;
+create trigger trg_create_profile_for_new_user
+after insert on auth.users
+for each row execute function create_profile_for_new_user();
+
+create table if not exists auditoria_cambios (
+  id uuid primary key default gen_random_uuid(),
+  tabla text not null,
+  registro_id uuid,
+  accion text not null check (accion in ('INSERT', 'UPDATE', 'DELETE')),
+  usuario_id uuid references auth.users(id) on delete set null,
+  usuario_email text,
+  rol text,
+  datos_anteriores jsonb,
+  datos_nuevos jsonb,
   created_at timestamp with time zone default now()
 );
 
@@ -148,6 +186,135 @@ create index if not exists idx_almacenamiento_romana on almacenamiento(romana_id
 create index if not exists idx_almacenamiento_estado on almacenamiento(estado_almacenamiento);
 create index if not exists idx_documentos_curimapu_romana on documentos_curimapu(romana_id);
 create index if not exists idx_documentos_curimapu_correlativo on documentos_curimapu(correlativo);
+create index if not exists idx_auditoria_cambios_tabla on auditoria_cambios(tabla);
+create index if not exists idx_auditoria_cambios_usuario on auditoria_cambios(usuario_id);
+create index if not exists idx_auditoria_cambios_created_at on auditoria_cambios(created_at);
+
+alter table proveedores add column if not exists created_by uuid references auth.users(id) on delete set null;
+alter table proveedores add column if not exists updated_by uuid references auth.users(id) on delete set null;
+alter table proveedores add column if not exists updated_at timestamp with time zone;
+alter table romana add column if not exists created_by uuid references auth.users(id) on delete set null;
+alter table romana add column if not exists updated_by uuid references auth.users(id) on delete set null;
+alter table romana add column if not exists updated_at timestamp with time zone;
+alter table laboratorio add column if not exists created_by uuid references auth.users(id) on delete set null;
+alter table laboratorio add column if not exists updated_by uuid references auth.users(id) on delete set null;
+alter table laboratorio add column if not exists updated_at timestamp with time zone;
+alter table almacenamiento add column if not exists created_by uuid references auth.users(id) on delete set null;
+alter table almacenamiento add column if not exists updated_by uuid references auth.users(id) on delete set null;
+alter table almacenamiento add column if not exists updated_at timestamp with time zone;
+alter table documentos_curimapu add column if not exists created_by uuid references auth.users(id) on delete set null;
+alter table documentos_curimapu add column if not exists updated_by uuid references auth.users(id) on delete set null;
+alter table documentos_curimapu add column if not exists updated_at timestamp with time zone;
+
+create or replace function current_app_role()
+returns text as $$
+  select coalesce((select rol from perfiles where id = auth.uid()), 'consulta');
+$$ language sql stable security definer;
+
+create or replace function can_write_area(area text)
+returns boolean as $$
+  select current_app_role() in ('admin', 'desarrollador') or current_app_role() = area;
+$$ language sql stable security definer;
+
+create or replace function can_write_documents()
+returns boolean as $$
+  select current_app_role() in ('admin', 'desarrollador', 'romana', 'laboratorio', 'almacenamiento');
+$$ language sql stable security definer;
+
+create or replace function set_user_tracking_columns()
+returns trigger as $$
+begin
+  if tg_op = 'INSERT' then
+    new.created_by = coalesce(new.created_by, auth.uid());
+    new.updated_by = auth.uid();
+    new.updated_at = now();
+    return new;
+  end if;
+
+  if tg_op = 'UPDATE' then
+    new.created_by = old.created_by;
+    new.updated_by = auth.uid();
+    new.updated_at = now();
+    return new;
+  end if;
+
+  return new;
+end;
+$$ language plpgsql security definer;
+
+create or replace function audit_table_change()
+returns trigger as $$
+declare
+  next_record jsonb;
+  previous_record jsonb;
+  record_id uuid;
+begin
+  if tg_op = 'DELETE' then
+    previous_record = to_jsonb(old);
+    next_record = null;
+    record_id = old.id;
+  else
+    previous_record = case when tg_op = 'UPDATE' then to_jsonb(old) else null end;
+    next_record = to_jsonb(new);
+    record_id = new.id;
+  end if;
+
+  insert into auditoria_cambios (
+    tabla,
+    registro_id,
+    accion,
+    usuario_id,
+    usuario_email,
+    rol,
+    datos_anteriores,
+    datos_nuevos
+  )
+  values (
+    tg_table_name,
+    record_id,
+    tg_op,
+    auth.uid(),
+    auth.jwt() ->> 'email',
+    current_app_role(),
+    previous_record,
+    next_record
+  );
+
+  return coalesce(new, old);
+end;
+$$ language plpgsql security definer;
+
+drop trigger if exists trg_tracking_proveedores on proveedores;
+create trigger trg_tracking_proveedores before insert or update on proveedores
+for each row execute function set_user_tracking_columns();
+drop trigger if exists trg_tracking_romana on romana;
+create trigger trg_tracking_romana before insert or update on romana
+for each row execute function set_user_tracking_columns();
+drop trigger if exists trg_tracking_laboratorio on laboratorio;
+create trigger trg_tracking_laboratorio before insert or update on laboratorio
+for each row execute function set_user_tracking_columns();
+drop trigger if exists trg_tracking_almacenamiento on almacenamiento;
+create trigger trg_tracking_almacenamiento before insert or update on almacenamiento
+for each row execute function set_user_tracking_columns();
+drop trigger if exists trg_tracking_documentos on documentos_curimapu;
+create trigger trg_tracking_documentos before insert or update on documentos_curimapu
+for each row execute function set_user_tracking_columns();
+
+drop trigger if exists trg_audit_proveedores on proveedores;
+create trigger trg_audit_proveedores after insert or update or delete on proveedores
+for each row execute function audit_table_change();
+drop trigger if exists trg_audit_romana on romana;
+create trigger trg_audit_romana after insert or update or delete on romana
+for each row execute function audit_table_change();
+drop trigger if exists trg_audit_laboratorio on laboratorio;
+create trigger trg_audit_laboratorio after insert or update or delete on laboratorio
+for each row execute function audit_table_change();
+drop trigger if exists trg_audit_almacenamiento on almacenamiento;
+create trigger trg_audit_almacenamiento after insert or update or delete on almacenamiento
+for each row execute function audit_table_change();
+drop trigger if exists trg_audit_documentos on documentos_curimapu;
+create trigger trg_audit_documentos after insert or update or delete on documentos_curimapu
+for each row execute function audit_table_change();
 
 -- Mantiene el estado general del camion segun laboratorio.
 create or replace function set_estado_romana_desde_laboratorio()
@@ -247,8 +414,14 @@ insert into configuracion (humedad_alerta, nombre_empresa, color_principal, colo
 select 15.0, 'CURIMAPU', '#2f6b3f', '#1f3d2b'
 where not exists (select 1 from configuracion);
 
--- RLS abierto para prototipo academico.
--- Para produccion, reemplazar estas politicas por reglas con auth.uid().
+-- RLS por rol para produccion.
+-- Roles validos en perfiles.rol:
+-- admin: acceso total.
+-- desarrollador: acceso total tecnico.
+-- romana: modifica romana/proveedores y puede leer laboratorio/almacenamiento/planilla.
+-- laboratorio: modifica laboratorio y puede leer romana/almacenamiento/planilla.
+-- almacenamiento: modifica almacenamiento y puede leer romana/laboratorio/planilla.
+-- consulta: solo lectura.
 alter table proveedores enable row level security;
 alter table romana enable row level security;
 alter table laboratorio enable row level security;
@@ -256,6 +429,7 @@ alter table almacenamiento enable row level security;
 alter table configuracion enable row level security;
 alter table documentos_curimapu enable row level security;
 alter table perfiles enable row level security;
+alter table auditoria_cambios enable row level security;
 
 drop policy if exists "prototipo proveedores lectura" on proveedores;
 drop policy if exists "prototipo proveedores escritura" on proveedores;
@@ -271,18 +445,59 @@ drop policy if exists "prototipo documentos lectura" on documentos_curimapu;
 drop policy if exists "prototipo documentos escritura" on documentos_curimapu;
 drop policy if exists "prototipo perfiles lectura" on perfiles;
 drop policy if exists "prototipo perfiles escritura" on perfiles;
+drop policy if exists "proveedores lectura autenticada" on proveedores;
+drop policy if exists "proveedores escritura romana admin" on proveedores;
+drop policy if exists "romana lectura autenticada" on romana;
+drop policy if exists "romana escritura rol romana" on romana;
+drop policy if exists "laboratorio lectura autenticada" on laboratorio;
+drop policy if exists "laboratorio escritura rol laboratorio" on laboratorio;
+drop policy if exists "almacenamiento lectura autenticada" on almacenamiento;
+drop policy if exists "almacenamiento escritura rol almacenamiento" on almacenamiento;
+drop policy if exists "configuracion lectura autenticada" on configuracion;
+drop policy if exists "configuracion escritura admin" on configuracion;
+drop policy if exists "documentos lectura autenticada" on documentos_curimapu;
+drop policy if exists "documentos escritura roles operativos" on documentos_curimapu;
+drop policy if exists "perfiles lectura propia o admin" on perfiles;
+drop policy if exists "perfiles escritura admin" on perfiles;
+drop policy if exists "auditoria lectura admin" on auditoria_cambios;
+drop policy if exists "auditoria insercion sistema" on auditoria_cambios;
 
-create policy "prototipo proveedores lectura" on proveedores for select using (true);
-create policy "prototipo proveedores escritura" on proveedores for all using (true) with check (true);
-create policy "prototipo romana lectura" on romana for select using (true);
-create policy "prototipo romana escritura" on romana for all using (true) with check (true);
-create policy "prototipo laboratorio lectura" on laboratorio for select using (true);
-create policy "prototipo laboratorio escritura" on laboratorio for all using (true) with check (true);
-create policy "prototipo almacenamiento lectura" on almacenamiento for select using (true);
-create policy "prototipo almacenamiento escritura" on almacenamiento for all using (true) with check (true);
-create policy "prototipo configuracion lectura" on configuracion for select using (true);
-create policy "prototipo configuracion escritura" on configuracion for all using (true) with check (true);
-create policy "prototipo documentos lectura" on documentos_curimapu for select using (true);
-create policy "prototipo documentos escritura" on documentos_curimapu for all using (true) with check (true);
-create policy "prototipo perfiles lectura" on perfiles for select using (true);
-create policy "prototipo perfiles escritura" on perfiles for all using (true) with check (true);
+create policy "proveedores lectura autenticada" on proveedores
+for select using (auth.uid() is not null);
+create policy "proveedores escritura romana admin" on proveedores
+for all using (can_write_area('romana')) with check (can_write_area('romana'));
+
+create policy "romana lectura autenticada" on romana
+for select using (auth.uid() is not null);
+create policy "romana escritura rol romana" on romana
+for all using (can_write_area('romana')) with check (can_write_area('romana'));
+
+create policy "laboratorio lectura autenticada" on laboratorio
+for select using (auth.uid() is not null);
+create policy "laboratorio escritura rol laboratorio" on laboratorio
+for all using (can_write_area('laboratorio')) with check (can_write_area('laboratorio'));
+
+create policy "almacenamiento lectura autenticada" on almacenamiento
+for select using (auth.uid() is not null);
+create policy "almacenamiento escritura rol almacenamiento" on almacenamiento
+for all using (can_write_area('almacenamiento')) with check (can_write_area('almacenamiento'));
+
+create policy "configuracion lectura autenticada" on configuracion
+for select using (auth.uid() is not null);
+create policy "configuracion escritura admin" on configuracion
+for all using (current_app_role() in ('admin', 'desarrollador')) with check (current_app_role() in ('admin', 'desarrollador'));
+
+create policy "documentos lectura autenticada" on documentos_curimapu
+for select using (auth.uid() is not null);
+create policy "documentos escritura roles operativos" on documentos_curimapu
+for all using (can_write_documents()) with check (can_write_documents());
+
+create policy "perfiles lectura propia o admin" on perfiles
+for select using (id = auth.uid() or current_app_role() in ('admin', 'desarrollador'));
+create policy "perfiles escritura admin" on perfiles
+for all using (current_app_role() in ('admin', 'desarrollador')) with check (current_app_role() in ('admin', 'desarrollador'));
+
+create policy "auditoria lectura admin" on auditoria_cambios
+for select using (current_app_role() in ('admin', 'desarrollador'));
+create policy "auditoria insercion sistema" on auditoria_cambios
+for insert with check (auth.uid() is not null);

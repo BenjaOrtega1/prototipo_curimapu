@@ -1,8 +1,8 @@
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
-import { getStore, setStore, uid } from './localStore';
+import { getStore, setStore, shouldUseRemote, uid } from './localStore';
 
 export async function listProveedores() {
-  if (isSupabaseConfigured) {
+  if (isSupabaseConfigured && shouldUseRemote()) {
     const { data, error } = await supabase.from('proveedores').select('*').order('created_at', { ascending: false });
     if (error) throw error;
     return data;
@@ -11,7 +11,7 @@ export async function listProveedores() {
 }
 
 export async function upsertProveedor(payload) {
-  if (isSupabaseConfigured) {
+  if (isSupabaseConfigured && shouldUseRemote()) {
     const { data, error } = await supabase.from('proveedores').upsert(payload).select().single();
     if (error) throw error;
     return data;

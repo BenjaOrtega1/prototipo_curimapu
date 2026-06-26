@@ -1,8 +1,8 @@
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
-import { composeRecords, getStore, setStore, uid } from './localStore';
+import { composeRecords, getStore, setStore, shouldUseRemote, uid } from './localStore';
 
 export async function listRomana() {
-  if (isSupabaseConfigured) {
+  if (isSupabaseConfigured && shouldUseRemote()) {
     const { data, error } = await supabase
       .from('romana')
       .select('*, proveedores(*), laboratorio(*), almacenamiento(*)')
@@ -23,7 +23,7 @@ export async function upsertRomana(payload) {
     estado: 'Pendiente de laboratorio',
     ...payload,
   };
-  if (isSupabaseConfigured) {
+  if (isSupabaseConfigured && shouldUseRemote()) {
     const { data, error } = await supabase.from('romana').upsert(record).select().single();
     if (error) throw error;
     return data;
@@ -43,7 +43,7 @@ export async function upsertRomana(payload) {
 }
 
 export async function updateRomanaEstado(id, estado) {
-  if (isSupabaseConfigured) {
+  if (isSupabaseConfigured && shouldUseRemote()) {
     const { data, error } = await supabase.from('romana').update({ estado }).eq('id', id).select().single();
     if (error) throw error;
     return data;
@@ -54,7 +54,7 @@ export async function updateRomanaEstado(id, estado) {
 }
 
 export async function deleteRomana(id) {
-  if (isSupabaseConfigured) {
+  if (isSupabaseConfigured && shouldUseRemote()) {
     const { error } = await supabase.from('romana').delete().eq('id', id);
     if (error) throw error;
     return;
