@@ -12,6 +12,7 @@ import Romana from './pages/Romana.jsx';
 import Laboratorio from './pages/Laboratorio.jsx';
 import Almacenamiento from './pages/Almacenamiento.jsx';
 import Planilla from './pages/Planilla.jsx';
+import Usuarios from './pages/Usuarios.jsx';
 
 export default function App() {
   return (
@@ -74,6 +75,7 @@ function ProtectedRoutes() {
         <Route path="/laboratorio" element={<PageTransition><Laboratorio /></PageTransition>} />
         <Route path="/almacenamiento" element={<PageTransition><Almacenamiento /></PageTransition>} />
         <Route path="/planilla" element={<PageTransition><Planilla /></PageTransition>} />
+        <Route path="/usuarios" element={<PageTransition><Usuarios /></PageTransition>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AnimatePresence>

@@ -51,7 +51,7 @@ export function AuthProvider({ children }) {
 
     supabase
       .from('perfiles')
-      .select('id, nombre, rol')
+      .select('id, nombre, rol, role')
       .eq('id', userId)
       .maybeSingle()
       .then(({ data }) => setProfile(data || null));
@@ -72,7 +72,7 @@ export function AuthProvider({ children }) {
   const user = demoSession ? demoUser : session?.user || null;
   const role = demoSession
     ? 'admin'
-    : normalizeRole(profile?.rol || user?.app_metadata?.role || user?.user_metadata?.rol || user?.user_metadata?.role);
+    : normalizeRole(profile?.role || profile?.rol || user?.app_metadata?.role || user?.user_metadata?.role || user?.user_metadata?.rol);
   const capabilities = getRoleCapabilities(role);
 
   const value = useMemo(() => ({

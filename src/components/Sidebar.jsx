@@ -1,4 +1,4 @@
-import { BarChart3, Database, FlaskConical, LogOut, PanelLeftClose, Scale, Table2, Warehouse } from 'lucide-react';
+import { BarChart3, Database, FlaskConical, LogOut, PanelLeftClose, Scale, Table2, UserCog, Warehouse } from 'lucide-react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import Logo from './Logo.jsx';
@@ -19,6 +19,9 @@ export default function Sidebar({ open = false, onClose }) {
   const navigate = useNavigate();
   const reduceMotion = useReducedMotion();
   const { exitDemo, role } = useAuth();
+  const visibleLinks = role === 'desarrollador'
+    ? [...links, { to: '/usuarios', label: 'Usuarios y roles', icon: UserCog }]
+    : links;
 
   async function logout() {
     exitDemo?.();
@@ -36,15 +39,13 @@ export default function Sidebar({ open = false, onClose }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: motionTokens.duration.base }}
-            onClick={onClose}
+            aria-hidden="true"
           />
         )}
       </AnimatePresence>
       <motion.aside
         className={`app-sidebar ${open ? 'is-open' : ''}`}
         initial={false}
-        animate={reduceMotion ? undefined : { x: open ? 0 : '-100%' }}
-        transition={motionTokens.spring}
       >
         <div className="app-sidebar__inner">
           <div className="app-sidebar__brand">
@@ -61,11 +62,10 @@ export default function Sidebar({ open = false, onClose }) {
           </div>
 
           <nav className="app-sidebar__nav">
-            {links.map(({ to, label, icon: Icon }) => (
+            {visibleLinks.map(({ to, label, icon: Icon }) => (
               <NavLink
                 key={to}
                 to={to}
-                onClick={onClose}
                 className={({ isActive }) => `app-sidebar__link ${isActive ? 'is-active' : ''}`}
               >
                 <Icon size={19} />
