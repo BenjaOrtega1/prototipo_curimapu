@@ -1,17 +1,26 @@
-import { Lock, Mail, Moon, PlayCircle, Sun } from 'lucide-react';
+import gsap from 'gsap';
+import { Activity, ClipboardList, FlaskConical, Lock, Mail, Moon, PlayCircle, Scale, Sun, Warehouse } from 'lucide-react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Logo from '../components/Logo.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { useTheme } from '../contexts/ThemeContext.jsx';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
+const processStages = [
+  { label: 'Romana', helper: 'Ingreso y pesaje', icon: Scale },
+  { label: 'Laboratorio', helper: 'Analisis de muestra', icon: FlaskConical },
+  { label: 'Silo', helper: 'Destino y stock', icon: Warehouse },
+  { label: 'Planilla', helper: 'Registro auditable', icon: ClipboardList },
+];
+
 export default function Login() {
   const navigate = useNavigate();
   const { isAuthenticated, loading: authLoading, enterDemo } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const reduceMotion = useReducedMotion();
+  const loginRef = useRef(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -21,6 +30,42 @@ export default function Login() {
   useEffect(() => {
     if (!authLoading && isAuthenticated) navigate('/');
   }, [authLoading, isAuthenticated, navigate]);
+
+  useEffect(() => {
+    if (reduceMotion || !loginRef.current) return undefined;
+
+    const context = gsap.context(() => {
+      gsap.to('.login-energy-particle', {
+        x: '78vw',
+        opacity: 1,
+        duration: 4.8,
+        repeat: -1,
+        stagger: 0.65,
+        ease: 'none',
+      });
+
+      gsap.to('.login-diagonal-line', {
+        xPercent: 18,
+        opacity: 0.75,
+        duration: 6,
+        repeat: -1,
+        yoyo: true,
+        stagger: 0.5,
+        ease: 'sine.inOut',
+      });
+
+      gsap.to('.login-process__pulse', {
+        scale: 1.35,
+        opacity: 0,
+        duration: 1.8,
+        repeat: -1,
+        stagger: 0.28,
+        ease: 'power2.out',
+      });
+    }, loginRef);
+
+    return () => context.revert();
+  }, [reduceMotion]);
 
   async function submit(event) {
     event.preventDefault();
@@ -64,13 +109,19 @@ export default function Login() {
   }
 
   return (
-    <main className="login-page">
+    <main className="login-page" ref={loginRef}>
       <div className="login-background" aria-hidden="true">
         <div className="login-field-lines">
           {Array.from({ length: 9 }).map((_, index) => <span key={index} />)}
         </div>
+        <div className="login-diagonal-field">
+          {Array.from({ length: 5 }).map((_, index) => <span className="login-diagonal-line" key={index} />)}
+        </div>
+        <div className="login-energy-stream">
+          {Array.from({ length: 7 }).map((_, index) => <span className="login-energy-particle" key={index} />)}
+        </div>
         <div className="login-grain-flow">
-          {Array.from({ length: 28 }).map((_, index) => <span key={index} style={{ '--i': index }} />)}
+          {Array.from({ length: 18 }).map((_, index) => <span key={index} style={{ '--i': index }} />)}
         </div>
         <div className="login-horizon" />
       </div>
@@ -83,7 +134,7 @@ export default function Login() {
           aria-label={theme === 'dark' ? 'Activar modo claro' : 'Activar modo oscuro'}
         >
           {theme === 'dark' ? (
-            <Sun size={18} className="text-amber-400" />
+            <Sun size={18} className="text-orange-400" />
           ) : (
             <Moon size={18} className="text-slate-200" />
           )}
@@ -104,20 +155,40 @@ export default function Login() {
           <div className="login-copy__kicker">Recepción agrícola · Planta Chillán</div>
           <h1>Del camión al silo, sin perder el hilo.</h1>
           <span>Controla pesaje, análisis, almacenamiento y planilla desde una operación clara, rápida y auditable.</span>
-          <div className="login-flow-strip" aria-hidden="true">
-            <span>Romana</span>
-            <i />
-            <span>Laboratorio</span>
-            <i />
-            <span>Silo</span>
-            <i />
-            <span>Planilla</span>
-          </div>
+          <motion.div
+            className="login-process"
+            initial={reduceMotion ? false : 'hidden'}
+            animate="show"
+            variants={{
+              hidden: {},
+              show: { transition: { staggerChildren: 0.09, delayChildren: 0.18 } },
+            }}
+            aria-label="Flujo de operacion: romana, laboratorio, silo y planilla"
+          >
+            {processStages.map(({ label, icon: Icon }) => (
+              <motion.div
+                className="login-process__stage"
+                key={label}
+                variants={{
+                  hidden: { opacity: 0, y: 16, filter: 'blur(8px)' },
+                  show: { opacity: 1, y: 0, filter: 'blur(0px)' },
+                }}
+                whileHover={reduceMotion ? undefined : { y: -5, scale: 1.015 }}
+                layout
+              >
+                <span className="login-process__pulse" aria-hidden="true" />
+                <div className="login-process__icon">
+                  <Icon size={22} />
+                </div>
+                <span className="login-process__label">{label}</span>
+              </motion.div>
+            ))}
+          </motion.div>
         </motion.div>
 
         <motion.form
           onSubmit={submit}
-          className="login-card"
+          className={`login-card ${error ? 'has-error' : ''}`}
           initial={reduceMotion ? false : { opacity: 0, y: 18, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ type: 'spring', stiffness: 320, damping: 30 }}
@@ -176,8 +247,13 @@ export default function Login() {
                 </div>
               </div>
               <div className="login-actions">
-                <button className="btn btn-primary w-full text-base" type="submit" disabled={loading}>
-                  {loading ? 'Ingresando...' : 'Ingresar'}
+                <button className="btn btn-primary login-submit w-full text-base" type="submit" disabled={loading}>
+                  {loading ? (
+                    <span className="login-submit__loading">
+                      <Activity size={18} />
+                      Sincronizando acceso
+                    </span>
+                  ) : 'Ingresar'}
                 </button>
                 <button className="login-demo-button" type="button" onClick={startDemo}>
                   <PlayCircle size={18} />

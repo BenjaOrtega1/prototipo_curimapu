@@ -30,12 +30,14 @@ export default function Header({ sidebarOpen = false, onMenuClick }) {
   return (
     <header className="app-header">
       <motion.span className="app-header__progress" style={{ scaleX: progress }} aria-hidden="true" />
-      <button className="app-header__menu" type="button" onClick={onMenuClick} aria-label={sidebarOpen ? 'Cerrar menu lateral' : 'Abrir menu lateral'}>
-        <Menu size={22} />
-      </button>
-      <div>
-        <p className="app-header__eyebrow">Operacion planta</p>
-        <h1 className="text-xl md:text-2xl font-black text-curimapu-dark">Hola, equipo Curimapu</h1>
+      <div className="app-header__left">
+        <button className="app-header__menu" type="button" onClick={onMenuClick} aria-label={sidebarOpen ? 'Cerrar menu lateral' : 'Abrir menu lateral'}>
+          <Menu size={22} />
+        </button>
+        <div className="app-header__title">
+          <p className="app-header__eyebrow">Operacion planta</p>
+          <h1 className="text-xl md:text-2xl font-black text-curimapu-dark">Hola, equipo Curimapu</h1>
+        </div>
       </div>
       <div className="app-header__right">
         <div className="text-right">
