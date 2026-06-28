@@ -8,7 +8,7 @@ import { supabase } from '../lib/supabase';
 import { roleLabel } from '../utils/permissions';
 
 const links = [
-  { to: '/', label: 'Dashboard', icon: BarChart3 },
+  { to: '/', label: 'Panel', icon: BarChart3 },
   { to: '/romana', label: 'Romana / Pesaje', icon: Scale },
   { to: '/laboratorio', label: 'Laboratorio / Análisis', icon: FlaskConical },
   { to: '/almacenamiento', label: 'Almacenamiento', icon: Warehouse },
