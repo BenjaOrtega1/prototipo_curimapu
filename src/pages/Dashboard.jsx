@@ -71,8 +71,7 @@ export default function Dashboard() {
         .from('.ops-hero__brand', { y: 14, opacity: 0, duration: 0.38 })
         .from('.ops-hero__copy > *', { y: 18, opacity: 0, stagger: 0.06, duration: 0.42 }, '-=0.2')
         .from('.ops-hero__actions > *', { y: 12, opacity: 0, stagger: 0.05, duration: 0.32 }, '-=0.2')
-        .from('.ops-command', { x: 24, opacity: 0, duration: 0.46 }, '-=0.18')
-        .from('.ops-metric', { y: 16, opacity: 0, stagger: 0.04, duration: 0.34 }, '-=0.18');
+        .from('.ops-command', { x: 24, opacity: 0, duration: 0.46 }, '-=0.18');
 
       gsap.to('.ops-hero__mesh', {
         yPercent: -14,
@@ -261,7 +260,7 @@ export default function Dashboard() {
 
 function Metric({ label, value, suffix = '', icon: Icon, tone }) {
   return (
-    <motion.article className={`ops-metric ops-metric--${tone}`} variants={itemReveal} layout>
+    <motion.article className={`ops-metric ops-metric--${tone}`} variants={itemReveal}>
       <span className="ops-metric__icon"><Icon size={20} /></span>
       <div>
         <p>{label}</p>
